@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/yinqiwen/gsnova/common/channel"
 	"github.com/yinqiwen/gsnova/common/helper"
 	"github.com/yinqiwen/gsnova/common/logger"
 	"github.com/yinqiwen/gsnova/common/mux"
@@ -180,15 +181,19 @@ START:
 		logger.Error("[ERROR]No proxy found for %s:%s", protocol, remoteHost)
 		return
 	}
-	stream, conf, err := getMuxStreamByChannel(proxyChannelName)
+	stream, conf, err := channel.GetMuxStreamByChannel(proxyChannelName)
 	if nil != err || nil == stream {
 		logger.Error("Failed to open stream for reason:%v by proxy:%s", err, proxyChannelName)
 		return
 	}
 	defer stream.Close()
 	ssid := stream.StreamID()
+	opt := mux.StreamOptions{
+		DialTimeout: conf.RemoteDialMSTimeout,
+		Hops:        conf.Hops,
+	}
 	logger.Notice("Proxy stream[%d] select %s for proxy to %s:%s", ssid, proxyChannelName, remoteHost, remotePort)
-	err = stream.Connect("tcp", net.JoinHostPort(remoteHost, remotePort))
+	err = stream.Connect("tcp", net.JoinHostPort(remoteHost, remotePort), opt)
 	if nil != err {
 		logger.Error("Connect failed from proxy connection for reason:%v", err)
 		return
@@ -243,7 +248,7 @@ START:
 
 func startLocalProxyServer(proxyIdx int) (*net.TCPListener, error) {
 	proxyConf := &GConf.Proxy[proxyIdx]
-	if proxyConf.Transparent {
+	if supportTransparentProxy() {
 		go startTransparentUDProxy(proxyConf.Local, proxyConf)
 	}
 	tcpaddr, err := net.ResolveTCPAddr("tcp", proxyConf.Local)
@@ -267,15 +272,15 @@ func startLocalProxyServer(proxyIdx int) (*net.TCPListener, error) {
 				continue
 			}
 			isTransparent := false
-			tcpAddr, ok := conn.RemoteAddr().(*net.TCPAddr)
-			if ok {
-				_, exist := helper.GetLocalIPSet()[tcpAddr.IP.String()]
-				if !exist {
-					isTransparent = true
+			if supportTransparentProxy() {
+				tcpAddr, ok := conn.RemoteAddr().(*net.TCPAddr)
+				if ok {
+					_, exist := helper.GetLocalIPSet()[tcpAddr.IP.String()]
+					if !exist {
+						isTransparent = true
+					}
 				}
 			}
-			//s1 := conn.RemoteAddr().String()
-			//logger.Debug("####%T", conn.RemoteAddr())
 			var originalHost, originalPort string
 			if isTransparent {
 				newConn, remoteIP, remotePort, err := getOrinalTCPRemoteAddr(conn)

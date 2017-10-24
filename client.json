@@ -12,25 +12,13 @@
     "LocalDNS":{
     	//only listen UDP
     	"Listen": "127.0.0.1:5300",
-    	//for PAC rule 'IsCNIP', it would resolve the domain by 'TrustedDNS' if 'BlockedByGFW', and resolve the rest by 'FastDNS'
-    	"FastDNS":["114.114.114.114"],
-    	"TrustedDNS": ["208.67.222.222:443", "208.67.220.220:443"],
-    	"CacheSize":1024,
-    	"TCPConnect": false 
+    	"FastDNS":["223.5.5.5","180.76.76.76"],
+    	"TrustedDNS": ["208.67.222.222", "208.67.220.220"]
 	},
-	
-	//used to replace forward dns query's target DNS server addr 
-	"RemoteDNS":{
-    	"TrustedDNS": ["8.8.8.8", "8.8.4.4"]
-    },
 
 	"UDPGW":{
 		//fake address, only used as udp protocol indicator
-		"Addr":"20.20.20.20:1111",
-		//since gsnova sniff SNI for https, 'Host' for http, return fake record for dns query would make it run faster for http/https traffic
-		"LocalDNSRecord":{
-			"*" : "111.111.111.111"
-		}
+		"Addr":"20.20.20.20:1111"
 	},
 
 	"SNI":{
@@ -102,17 +90,18 @@
 	        //if u are behind a HTTP proxy
 	        "Proxy":"",
 		    "ConnsPerServer":3,
-		    //Unit: second
-		    "DialTimeout":5,
-		    //Unit: second
-		    "ReadTimeout":15,
+			"RemoteDialMSTimeout":5000,
+			"RemoteDNSReadMSTimeout":1500,
+			"RemoteUDPReadMSTimeout":15000,
+			"LocalDialMSTimeout":5000,
 		    //Reconnect after 120s
 		    "ReconnectPeriod": 300,
 		    //ReconnectPeriod rand adjustment, the real reconnect period is random value between [P - adjust, P + adjust] 
 		    "RCPRandomAdjustment" : 10,
 		    //Send heartbeat msg to keep alive 
 			"HeartBeatPeriod": 30,
-			"Compressor":"none"
+			"Compressor":"none",
+			"Hops":[]
 		},
 		{
 		    "Enable":false,
@@ -121,10 +110,10 @@
 	        //if u are behind a HTTP proxy
 	        "Proxy":"",
 		    "ConnsPerServer":3,
-		    //Unit: second
-		    "DialTimeout":5,
-		    //Unit: second
-		    "ReadTimeout":15,
+			"RemoteDialMSTimeout":5000,
+			"RemoteDNSReadMSTimeout":1500,
+			"RemoteUDPReadMSTimeout":15000,
+			"LocalDialMSTimeout":5000,
 		    //Reconnect after 120s
 		    "ReconnectPeriod": 1800,
 		    //ReconnectPeriod rand adjustment, the real reconnect period is random value between [P - adjust, P + adjust] 
@@ -134,7 +123,8 @@
 			"Compressor":"none",
 			"KCP":{
 				"Mode":"fast"
-			}
+			},
+			"Hops":[]
 		}
 	]
 }

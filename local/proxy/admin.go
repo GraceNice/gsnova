@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"github.com/yinqiwen/gotoolkit/ots"
+	"github.com/yinqiwen/gsnova/common/channel"
 	"github.com/yinqiwen/gsnova/common/helper"
 	"github.com/yinqiwen/gsnova/common/netx"
-	"github.com/yinqiwen/gsnova/local"
 )
 
 func getConfigList(w http.ResponseWriter, r *http.Request) {
@@ -32,22 +32,11 @@ func getConfigList(w http.ResponseWriter, r *http.Request) {
 
 func statCallback(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
-	fmt.Fprintf(w, "Version: %s\n", local.Version)
+	fmt.Fprintf(w, "Version: %s\n", channel.LocalVersion)
 	//fmt.Fprintf(w, "NumSession: %d\n", getProxySessionSize())
-	if nil != dnsCache {
-		fmt.Fprintf(w, "DNSCacheSize: %d\n", dnsCache.Len())
-	}
 	ots.Handle("stat", w)
 	fmt.Fprintf(w, "RunningProxyStreamNum: %d\n", runningProxyStreamCount)
-	for _, pch := range proxyChannelTable {
-		if pch.Conf.Name != directProxyChannelName {
-			for holder := range pch.sessions {
-				if nil != holder {
-					holder.dumpStat(w)
-				}
-			}
-		}
-	}
+	channel.DumpLoaclChannelStat(w)
 }
 func stackdumpCallback(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(200)
@@ -164,22 +153,18 @@ func SyncConfig(addr string, localDir string) (bool, error) {
 	update := false
 	for _, conf := range confList {
 		u := false
-		u, err = syncConfigFile(addr, localDir, conf, "client.json")
-		if nil != err {
-			return false, err
-		}
-		if u {
-			update = true
-		}
-		u, err = syncConfigFile(addr, localDir, conf, "hosts.json")
-		if nil != err {
-			return false, err
-		}
-		if u {
-			update = true
-		}
-		if u {
-			log.Printf("Synced config:%s success", conf)
+		files := []string{"client.json", "hosts.json", "cnipset.txt"}
+		for _, file := range files {
+			u, err = syncConfigFile(addr, localDir, conf, file)
+			if nil != err {
+				return false, err
+			}
+			if u {
+				update = true
+			}
+			if u {
+				log.Printf("Synced config:%s success", conf)
+			}
 		}
 	}
 	return update, nil

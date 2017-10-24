@@ -1,17 +1,14 @@
 package gsnova
 
 import (
+	_ "github.com/yinqiwen/gsnova/common/channel/common"
 	"github.com/yinqiwen/gsnova/common/netx"
-	_ "github.com/yinqiwen/gsnova/local/channel/direct"
-	_ "github.com/yinqiwen/gsnova/local/channel/http"
-	_ "github.com/yinqiwen/gsnova/local/channel/http2"
-	_ "github.com/yinqiwen/gsnova/local/channel/kcp"
-	_ "github.com/yinqiwen/gsnova/local/channel/quic"
-	_ "github.com/yinqiwen/gsnova/local/channel/ssh"
-	_ "github.com/yinqiwen/gsnova/local/channel/tcp"
-	_ "github.com/yinqiwen/gsnova/local/channel/websocket"
 	"github.com/yinqiwen/gsnova/local/proxy"
 )
+
+func init() {
+
+}
 
 // type testProc struct {
 // }
@@ -20,11 +17,12 @@ import (
 // 	return nil
 // }
 
-func StartLocalProxy(home string, conf string, hosts string, watchConf bool) error {
+func StartLocalProxy(home string, conf string, hosts string, cnip string, watchConf bool) error {
 	options := proxy.ProxyOptions{
 		Home:      home,
 		Config:    conf,
 		Hosts:     hosts,
+		CNIP:      cnip,
 		WatchConf: watchConf,
 	}
 	// ProtectConnections("114.114.114.114", &testProc{})
